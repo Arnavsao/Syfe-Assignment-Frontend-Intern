@@ -106,6 +106,7 @@ export function addContribution(
 
   const newContribution: Contribution = {
     id: generateId(),
+    title: formData.title,
     amount: formData.amount,
     date: formData.date,
     currency: goal.currency,
