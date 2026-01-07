@@ -83,10 +83,36 @@ export function validateGoalForm(name: string, targetAmount: number): Validation
 }
 
 /**
+ * Validate contribution title
+ */
+export function validateContributionTitle(title: string): ValidationError | null {
+  const trimmedTitle = title.trim();
+
+  if (trimmedTitle.length < VALIDATION.MIN_NAME_LENGTH) {
+    return {
+      field: "title",
+      message: "Title is required",
+    };
+  }
+
+  if (trimmedTitle.length > VALIDATION.MAX_NAME_LENGTH) {
+    return {
+      field: "title",
+      message: `Title must be less than ${VALIDATION.MAX_NAME_LENGTH} characters`,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Validate all contribution form fields
  */
-export function validateContributionForm(amount: number, date: Date): ValidationError[] {
+export function validateContributionForm(title: string, amount: number, date: Date): ValidationError[] {
   const errors: ValidationError[] = [];
+
+  const titleError = validateContributionTitle(title);
+  if (titleError) errors.push(titleError);
 
   const amountError = validateAmount(amount);
   if (amountError) errors.push(amountError);

@@ -6,6 +6,7 @@ import {
   calculateTotalSaved,
   calculateTotalTarget,
   calculateOverallProgress,
+  calculateExtraSavings,
 } from "@/lib/api";
 import { convertCurrency } from "@/lib/utils";
 
@@ -69,12 +70,14 @@ export function useDashboardStats({
     }
 
     const overallProgress = calculateOverallProgress(goals);
+    const extraSavings = Math.max(0, totalSaved - totalTarget);
 
     return {
       totalTarget,
       totalSaved,
       overallProgress,
       totalGoals: goals.length,
+      extraSavings,
     };
   }, [goals, exchangeRate, displayCurrency]);
 }

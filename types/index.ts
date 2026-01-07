@@ -19,6 +19,7 @@ export interface ExchangeRateResponse {
 // Contribution Types
 export interface Contribution {
   id: string;
+  title: string;
   amount: number;
   date: Date;
   currency: Currency;
@@ -43,6 +44,7 @@ export interface GoalFormData {
 }
 
 export interface ContributionFormData {
+  title: string;
   amount: number;
   date: Date;
 }
@@ -53,6 +55,7 @@ export interface DashboardStats {
   totalSaved: number;
   overallProgress: number;
   totalGoals: number;
+  extraSavings: number;
 }
 
 // UI State Types

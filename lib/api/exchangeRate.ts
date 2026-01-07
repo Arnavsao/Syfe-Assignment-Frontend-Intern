@@ -58,10 +58,16 @@ export async function fetchExchangeRate(
 
     const exchangeRate: ExchangeRate = {
       rate: data.conversion_rates.INR,
-      lastUpdated: new Date(data.time_last_update_unix * 1000),
+      lastUpdated: new Date(), // Use current time when fetched
       from: "USD",
       to: "INR",
     };
+
+    console.log("[Exchange Rate API] 🌐 Fetched from API", {
+      rate: exchangeRate.rate,
+      apiLastUpdate: new Date(data.time_last_update_unix * 1000).toISOString(),
+      fetchedAt: exchangeRate.lastUpdated.toISOString(),
+    });
 
     // Cache the exchange rate
     setStorageItem(STORAGE_KEYS.EXCHANGE_RATE, exchangeRate);
@@ -101,6 +107,11 @@ export async function getExchangeRate(
 
       // If cache is fresh, return cached data
       if (!isExchangeRateStale(lastFetchDate, EXCHANGE_RATE_CACHE_DURATION)) {
+        console.log("[Exchange Rate API] 📦 Returning cached rate", {
+          rate: cachedRate.rate,
+          cachedAt: lastFetch,
+          age: `${Math.round((Date.now() - lastFetchDate.getTime()) / 1000)}s`,
+        });
         // Convert string dates back to Date objects
         return {
           data: {
@@ -110,8 +121,14 @@ export async function getExchangeRate(
           error: null,
           success: true,
         };
+      } else {
+        console.log("[Exchange Rate API] ⚠️ Cache is stale, fetching new rate");
       }
+    } else {
+      console.log("[Exchange Rate API] 📭 No cache found, fetching new rate");
     }
+  } else {
+    console.log("[Exchange Rate API] 🔄 Force refresh requested, fetching new rate");
   }
 
   // Fetch new rate if cache is stale or refresh is forced

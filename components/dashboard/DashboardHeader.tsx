@@ -22,11 +22,11 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   return (
     <div>  {/* Header Section */}
-      <div className="mb-6 md:mb-0 text-center p-5">
+      <div className="mb-6 md:mb-0 text-center md:p-5">
         <h1 className="text-2xl md:text-3xl font-bold mb-1 text-gray-900">
           Syfe Savings Planner
         </h1>
-        <p className="text-gray-800 text-sm">Track your financial goals and monitor progress</p>
+        <p className="text-gray-800 text-md md:text-lg">Track your financial goals and monitor progress</p>
       </div>
       {/* Dashboard Section */}
     <div className="bg-gradient-to-r from-blue-700  to-indigo-700 rounded-xl shadow-xl p-6 md:p-8 text-white">
@@ -36,11 +36,12 @@ export function DashboardHeader({
           <Button
             size="sm"
             variant="ghost"
+            className="text-white"
             onClick={onRefreshRate}
             isLoading={isRefreshing}
           >
             <svg
-              className="w-4 h-4 mr-2"
+              className={`w-4 h-4 mr-2 transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -57,10 +58,10 @@ export function DashboardHeader({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+      <div className={`grid gap-4 md:gap-6 ${stats.extraSavings > 0 ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>
         <div className="">
           <p className="text-blue-100 text-sm mb-1">Total Saved</p>
-          <p className="text-3xl font-bold">
+          <p className="text-xl md:text-xl lg:text-2xl font-bold">
             {formatCurrency(stats.totalSaved, displayCurrency)}
           </p>
           <p className="text-blue-100 text-xs mt-1">
@@ -70,7 +71,7 @@ export function DashboardHeader({
 
         <div className="">
           <p className="text-blue-100 text-sm mb-1">Total Target</p>
-          <p className="text-3xl font-bold">
+          <p className="text-xl md:text-xl lg:text-2xl font-bold">
             {formatCurrency(stats.totalTarget, displayCurrency)}
           </p>
           <p className="text-blue-100 text-xs mt-1">
@@ -78,9 +79,9 @@ export function DashboardHeader({
           </p>
         </div>
 
-        <div className="">
+        <div className={stats.extraSavings > 0 ? "" : "col-span-2 md:col-span-1"}>
           <p className="text-blue-100 text-sm mb-1">Overall Progress</p>
-          <p className="text-3xl font-bold">{stats.overallProgress}%</p>
+          <p className="text-xl md:text-xl lg:text-2xl font-bold">{stats.overallProgress}%</p>
           <div className="mt-2 bg-white/20 rounded-full h-2 overflow-hidden">
             <div
               className="bg-white h-full rounded-full transition-all duration-500"
@@ -88,12 +89,25 @@ export function DashboardHeader({
             />
           </div>
         </div>
+
+        {stats.extraSavings > 0 && (
+          <div className="col-span-2 md:col-span-1">
+            <p className="text-blue-100 text-sm mb-1">Extra Savings</p>
+            <p className="text-xl md:text-xl lg:text-2xl font-bold text-green-300">
+              {formatCurrency(stats.extraSavings, displayCurrency)}
+            </p>
+            <p className="text-green-200 text-xs mt-1">
+              Beyond target!
+            </p>
+          </div>
+        )}
       </div>
-      <div className="text-sm text-blue-100 flex justify-between items-center pt-10">
+      <hr className="border-gray-400 my-4" />
+      <div className="text-sm text-blue-100 md:flex justify-between items-center">
         {exchangeRate ? (
           <>
             {/* Left: Exchange Rate */}
-            <div>
+            <div className="text-sm">
               Exchange Rate{" "}
               <span className="font-semibold text-white">
                 $1 = ₹{exchangeRate.rate.toFixed(2)}
@@ -101,7 +115,7 @@ export function DashboardHeader({
             </div>
       
             {/* Right: Last Updated */}
-            <div className="text-xs">
+            <div className="text-xs ">
               Last updated: {formatDateTime(exchangeRate.lastUpdated)}
             </div>
           </>

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Currency, GoalFormData, ContributionFormData, ModalState } from "@/types";
 import { useExchangeRate, useGoals, useDashboardStats } from "@/hooks";
 import { DashboardHeader } from "@/components/dashboard";
-import { GoalCard, AddGoalForm, AddContributionModal } from "@/components/goals";
+import { GoalCard, AddGoalModal, AddContributionModal, ViewContributionsModal } from "@/components/goals";
+import { Button, ConfirmationModal } from "@/components/ui";
 
 export default function Home() {
   const [displayCurrency] = useState<Currency>("INR");
@@ -12,6 +13,21 @@ export default function Home() {
     isOpen: false,
     goalId: null,
   });
+  const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false);
+  const [viewContributionsModalState, setViewContributionsModalState] = useState<ModalState>({
+    isOpen: false,
+    goalId: null,
+  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    goalId: string | null;
+    goalName: string | null;
+  }>({
+    isOpen: false,
+    goalId: null,
+    goalName: null,
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { exchangeRate, isLoading: isRateLoading, refetchRate } = useExchangeRate();
   const { goals, isLoading: isGoalsLoading, addGoal, addGoalContribution, removeGoal } = useGoals();
@@ -27,10 +43,19 @@ export default function Home() {
 
   const handleAddGoal = async (formData: GoalFormData) => {
     await addGoal(formData);
+    setIsAddGoalModalOpen(false);
   };
 
   const handleAddContribution = (goalId: string) => {
     setModalState({ isOpen: true, goalId });
+  };
+
+  const handleViewContributions = (goalId: string) => {
+    setViewContributionsModalState({ isOpen: true, goalId });
+  };
+
+  const handleCloseViewContributions = () => {
+    setViewContributionsModalState({ isOpen: false, goalId: null });
   };
 
   const handleSubmitContribution = async (
@@ -45,13 +70,35 @@ export default function Home() {
     setModalState({ isOpen: false, goalId: null });
   };
 
-  const handleDeleteGoal = async (goalId: string) => {
-    if (confirm("Are you sure you want to delete this goal?")) {
-      await removeGoal(goalId);
+  const handleDeleteGoal = (goalId: string) => {
+    const goal = goals.find((g) => g.id === goalId);
+    setDeleteConfirmation({
+      isOpen: true,
+      goalId,
+      goalName: goal?.name || null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmation.goalId) return;
+
+    setIsDeleting(true);
+    try {
+      await removeGoal(deleteConfirmation.goalId);
+      setDeleteConfirmation({ isOpen: false, goalId: null, goalName: null });
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
+  const handleCancelDelete = () => {
+    setDeleteConfirmation({ isOpen: false, goalId: null, goalName: null });
+  };
+
   const selectedGoal = goals.find((g) => g.id === modalState.goalId) || null;
+  const selectedGoalForView = goals.find((g) => g.id === viewContributionsModalState.goalId) || null;
 
   const isLoading = isRateLoading || isGoalsLoading;
 
@@ -66,9 +113,28 @@ export default function Home() {
           onRefreshRate={handleRefreshRate}
         />
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Your Goals</h2>
-          <AddGoalForm onSubmit={handleAddGoal} />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-2xl font-bold text-gray-900 whitespace-nowrap pl-2 md:pl-0">Your Goals</h2>
+          <Button
+            onClick={() => setIsAddGoalModalOpen(true)}
+            variant="primary"
+            className="shrink-0"
+          >
+            <svg
+              className="w-5 h-5 md:mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            <span className="hidden md:inline">Add New Goal</span>
+          </Button>
         </div>
 
         {isLoading ? (
@@ -105,17 +171,42 @@ export default function Home() {
                 goal={goal}
                 exchangeRate={exchangeRate}
                 onAddContribution={handleAddContribution}
+                onViewContributions={handleViewContributions}
                 onDelete={handleDeleteGoal}
               />
             ))}
           </div>
         )}
 
+        <AddGoalModal
+          isOpen={isAddGoalModalOpen}
+          onClose={() => setIsAddGoalModalOpen(false)}
+          onSubmit={handleAddGoal}
+        />
+
         <AddContributionModal
           isOpen={modalState.isOpen}
           goal={selectedGoal}
           onClose={handleCloseModal}
           onSubmit={handleSubmitContribution}
+        />
+
+        <ViewContributionsModal
+          isOpen={viewContributionsModalState.isOpen}
+          goal={selectedGoalForView}
+          onClose={handleCloseViewContributions}
+        />
+
+        <ConfirmationModal
+          isOpen={deleteConfirmation.isOpen}
+          onClose={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+          title="Delete Goal"
+          message={`Are you sure you want to delete "${deleteConfirmation.goalName}"? This action cannot be undone and all contributions will be permanently removed.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          isLoading={isDeleting}
         />
       </div>
     </main>

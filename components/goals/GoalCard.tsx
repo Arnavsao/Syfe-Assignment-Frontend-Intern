@@ -9,6 +9,7 @@ interface GoalCardProps {
   goal: Goal;
   exchangeRate: ExchangeRate | null;
   onAddContribution: (goalId: string) => void;
+  onViewContributions: (goalId: string) => void;
   onDelete?: (goalId: string) => void;
 }
 
@@ -16,6 +17,7 @@ export function GoalCard({
   goal,
   exchangeRate,
   onAddContribution,
+  onViewContributions,
   onDelete,
 }: GoalCardProps) {
   const progress = calculatePercentage(goal.currentAmount, goal.targetAmount);
@@ -78,7 +80,7 @@ export function GoalCard({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-600 mb-1">Target</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xl font-bold text-gray-900">
               {formatCurrency(goal.targetAmount, goal.currency)}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -87,7 +89,7 @@ export function GoalCard({
           </div>
           <div>
             <p className="text-sm text-gray-600 mb-1">Current</p>
-            <p className="text-2xl font-bold text-blue-600">
+            <p className="text-xl font-bold text-blue-600">
               {formatCurrency(goal.currentAmount, goal.currency)}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -107,10 +109,26 @@ export function GoalCard({
         </div>
 
         <div className="flex items-center justify-between pt-2">
-          <div className="text-sm text-gray-600">
+          <button
+            onClick={() => onViewContributions(goal.id)}
+            className="text-sm text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-1 group"
+          >
+            <svg
+              className="w-4 h-4 text-gray-400 group-hover:text-blue-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
             <span className="font-medium">{goal.contributions.length}</span>{" "}
             {goal.contributions.length === 1 ? "contribution" : "contributions"}
-          </div>
+          </button>
           <Button
             size="sm"
             variant="primary"

@@ -148,12 +148,22 @@ export function calculateTotalTarget(goals: Goal[]): number {
 export function calculateOverallProgress(goals: Goal[]): number {
   if (goals.length === 0) return 0;
 
-  const totalProgress = goals.reduce((sum, goal) => {
-    const progress = goal.targetAmount > 0
-      ? (goal.currentAmount / goal.targetAmount) * 100
-      : 0;
-    return sum + progress;
-  }, 0);
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+  const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
 
-  return Math.min(Math.round(totalProgress / goals.length), 100);
+  if (totalTarget === 0) return 0;
+
+  return Math.min(Math.round((totalSaved / totalTarget) * 100), 100);
+}
+
+/**
+ * Calculate extra savings (amount saved beyond total target)
+ */
+export function calculateExtraSavings(goals: Goal[]): number {
+  if (goals.length === 0) return 0;
+
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+  const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+
+  return Math.max(0, totalSaved - totalTarget);
 }

@@ -23,11 +23,21 @@ export function useExchangeRate(): UseExchangeRateReturn {
     setIsLoading(true);
     setError(null);
 
+    console.log(`[Exchange Rate] Fetching... (forceRefresh: ${forceRefresh})`);
+    const startTime = Date.now();
+
     const response = await getExchangeRate(forceRefresh);
 
     if (response.success && response.data) {
+      console.log(`[Exchange Rate] ✅ Success (${Date.now() - startTime}ms)`, {
+        rate: response.data.rate,
+        lastUpdated: response.data.lastUpdated,
+        from: response.data.from,
+        to: response.data.to,
+      });
       setExchangeRate(response.data);
     } else {
+      console.error(`[Exchange Rate] ❌ Failed:`, response.error);
       setError(response.error || "Failed to fetch exchange rate");
     }
 

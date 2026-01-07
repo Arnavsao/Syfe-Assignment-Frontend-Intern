@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,6 +17,33 @@ export function Modal({
   children,
   size = "md",
 }: ModalProps) {
+  const [isClosing, setIsClosing] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
+
+  // Handle open / close animation lifecycle
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+      // Delay animation start for smooth entrance
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimatingIn(true);
+        });
+      });
+    } else if (shouldRender) {
+      setIsAnimatingIn(false);
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsClosing(false);
+      }, 350); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, shouldRender]);
+
+  // Escape key + body scroll lock
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -33,7 +60,7 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   const sizes = {
     sm: "max-w-md",
@@ -43,13 +70,26 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop with smooth fade */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out"
+        style={{
+          opacity: isAnimatingIn && !isClosing ? 1 : 0,
+        }}
         onClick={onClose}
       />
+
+      {/* Modal with exponential spring-like animation */}
       <div
-        className={`relative bg-white rounded-lg shadow-xl ${sizes[size]} w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200`}
+        className={`relative bg-white rounded-xl shadow-xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto`}
+        style={{
+          transform: isAnimatingIn && !isClosing ? 'scale(1)' : 'scale(0.7)',
+          opacity: isAnimatingIn && !isClosing ? 1 : 0,
+          transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          pointerEvents: isClosing ? 'none' : 'auto',
+        }}
       >
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
@@ -72,6 +112,8 @@ export function Modal({
             </svg>
           </button>
         </div>
+
+        {/* Content */}
         <div className="p-6">{children}</div>
       </div>
     </div>

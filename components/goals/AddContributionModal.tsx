@@ -19,6 +19,7 @@ export function AddContributionModal({
   onClose,
   onSubmit,
 }: AddContributionModalProps) {
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,6 +29,7 @@ export function AddContributionModal({
     if (isOpen && goal) {
       const today = new Date().toISOString().split("T")[0];
       setDate(today);
+      setTitle("");
       setAmount("");
       setErrors({});
     }
@@ -41,7 +43,7 @@ export function AddContributionModal({
     const amountNum = parseFloat(amount);
     const dateObj = new Date(date);
 
-    const validationErrors = validateContributionForm(amountNum, dateObj);
+    const validationErrors = validateContributionForm(title, amountNum, dateObj);
 
     if (validationErrors.length > 0) {
       const errorMap: Record<string, string> = {};
@@ -57,10 +59,12 @@ export function AddContributionModal({
 
     try {
       await onSubmit(goal.id, {
+        title: title.trim(),
         amount: amountNum,
         date: dateObj,
       });
 
+      setTitle("");
       setAmount("");
       setDate("");
       onClose();
@@ -114,6 +118,18 @@ export function AddContributionModal({
         )}
 
         <Input
+          label="Title"
+          type="text"
+          placeholder="e.g., Monthly Salary, Bonus, Gift"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          error={errors.title}
+          helperText="Brief description of this contribution"
+          required
+          autoFocus
+        />
+
+        <Input
           label="Contribution Amount"
           type="number"
           placeholder="0.00"
@@ -124,7 +140,6 @@ export function AddContributionModal({
           error={errors.amount}
           helperText={`Amount in ${goal.currency}`}
           required
-          autoFocus
         />
 
         <Input

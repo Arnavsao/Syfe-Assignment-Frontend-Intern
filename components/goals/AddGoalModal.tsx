@@ -1,21 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Currency, GoalFormData } from "@/types";
 import { validateGoalForm } from "@/lib/utils";
-import { Input, Select, Button, Card } from "@/components/ui";
+import { Input, Select, Button, Modal } from "@/components/ui";
 
-interface AddGoalFormProps {
+interface AddGoalModalProps {
+  isOpen: boolean;
+  onClose: () => void;
   onSubmit: (formData: GoalFormData) => Promise<void>;
-  isSubmitting?: boolean;
 }
 
-export function AddGoalForm({ onSubmit, isSubmitting = false }: AddGoalFormProps) {
+export function AddGoalModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: AddGoalModalProps) {
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [currency, setCurrency] = useState<Currency>("INR");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName("");
+      setTargetAmount("");
+      setCurrency("INR");
+      setErrors({});
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,80 +47,34 @@ export function AddGoalForm({ onSubmit, isSubmitting = false }: AddGoalFormProps
     }
 
     setErrors({});
+    setIsSubmitting(true);
 
-    await onSubmit({
-      name: name.trim(),
-      targetAmount: amount,
-      currency,
-    });
+    try {
+      await onSubmit({
+        name: name.trim(),
+        targetAmount: amount,
+        currency,
+      });
 
-    setName("");
-    setTargetAmount("");
-    setCurrency("INR");
-    setShowForm(false);
+      setName("");
+      setTargetAmount("");
+      setCurrency("INR");
+      onClose();
+    } catch (error) {
+      setErrors({ general: "Failed to create goal" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const handleCancel = () => {
-    setName("");
-    setTargetAmount("");
-    setCurrency("INR");
-    setErrors({});
-    setShowForm(false);
-  };
-
-  if (!showForm) {
-    return (
-      <Button
-        onClick={() => setShowForm(true)}
-        variant="primary"
-        className="w-full md:w-auto"
-      >
-        <svg
-          className="w-5 h-5 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-          />
-        </svg>
-        Add New Goal
-      </Button>
-    );
-  }
 
   return (
-    <Card className="border-2 border-blue-500">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create New Goal" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">
-            Create New Goal
-          </h3>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Close form"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+        {errors.general && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-3 text-sm text-red-700">
+            {errors.general}
+          </div>
+        )}
 
         <Input
           label="Goal Name"
@@ -116,6 +84,7 @@ export function AddGoalForm({ onSubmit, isSubmitting = false }: AddGoalFormProps
           onChange={(e) => setName(e.target.value)}
           error={errors.name}
           required
+          autoFocus
         />
 
         <Input
@@ -138,6 +107,7 @@ export function AddGoalForm({ onSubmit, isSubmitting = false }: AddGoalFormProps
             { value: "INR", label: "₹ INR - Indian Rupee" },
             { value: "USD", label: "$ USD - US Dollar" },
           ]}
+          required
         />
 
         <div className="flex gap-3 pt-2">
@@ -152,13 +122,13 @@ export function AddGoalForm({ onSubmit, isSubmitting = false }: AddGoalFormProps
           <Button
             type="button"
             variant="secondary"
-            onClick={handleCancel}
+            onClick={onClose}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
         </div>
       </form>
-    </Card>
+    </Modal>
   );
 }
