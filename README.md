@@ -28,18 +28,28 @@ Built with **Next.js 15**, **TypeScript**, and **Tailwind CSS**, following produ
 ## Features Implemented
 
 ### Core Requirements
-- Create multiple goals with **name, target amount, and currency (INR/USD)**
+- **Create and Edit** multiple goals with **name, target amount, and currency (INR/USD)**
+  - Edit goal details via inline pencil icon
+  - Update goal name, target amount, or currency
+  - Allow currency changes even with existing contributions
 - Display goals as cards with:
   - Original target amount
   - Converted target (live exchange rate)
   - Current saved amount
   - Progress bar with percentage
-- Add contributions via modal with **title, amount, and date**
+- **Add and Edit** contributions via modal with **title, amount, and date**
+  - Edit contribution details from contributions table
+  - Smart amount calculation (adjusts goal progress by difference)
+  - Update title, amount, or date for any contribution
 - View contributions history in scrollable table with:
   - Title with text truncation for long names
   - Date (sorted newest first)
   - Amount in goal currency
-- Delete goals with confirmation modal
+  - **Actions column** with edit and delete buttons
+- **Delete** goals and contributions with confirmation modals
+  - Delete entire goals (removes all contributions)
+  - Delete individual contributions (adjusts saved amount)
+  - Confirmation dialogs prevent accidental deletion
 - Live INR ↔ USD exchange rate with:
   - Last updated timestamp
   - Manual refresh button
@@ -54,7 +64,11 @@ Built with **Next.js 15**, **TypeScript**, and **Tailwind CSS**, following produ
 
 ### Enhanced UX Features
 - **Smooth modal animations**: Spring-like scale + fade (350ms cubic-bezier)
+- **Modal reuse pattern**: Same modals for create and edit operations with prefilled data
 - **Confirmation dialogs**: Danger/warning/info variants for destructive actions
+- **Inline edit buttons**: Pencil icons appear next to goal titles for quick editing
+- **Actions column**: Dedicated edit/delete buttons in contributions table with hover effects
+- **Smart amount updates**: Editing contribution amounts calculates difference and adjusts goal progress
 - **Mobile optimizations**: Icon-only buttons, adaptive grid layouts
 - **Goal completion alerts**: Shows when a contribution will complete a goal
 - **Clickable contribution count**: Opens detailed contribution history
@@ -68,9 +82,10 @@ Built with **Next.js 15**, **TypeScript**, and **Tailwind CSS**, following produ
 ### Component Structure
 - UI split into **feature components** (Goals, Dashboard, Modals) and **reusable primitives**
 - Business logic isolated in **custom hooks**:
-  - `useGoals` → CRUD + persistence
+  - `useGoals` → Full CRUD operations (Create, Read, Update, Delete) + persistence
   - `useExchangeRate` → API + caching
   - `useDashboardStats` → derived state
+- **Modal reuse strategy**: Single modal components serve both create and edit modes
 
 ### State Management
 - No external state libraries used
@@ -124,14 +139,14 @@ syfe-assignment/
 │   │   └── DashboardHeader.tsx # Stats overview + exchange rate display
 │   │
 │   └── goals/                  # Goal Feature Components
-│       ├── GoalCard.tsx        # Individual goal display with actions
-│       ├── AddGoalModal.tsx    # Modal for creating new goals
-│       ├── AddContributionModal.tsx  # Modal for adding contributions
-│       └── ViewContributionsModal.tsx # Scrollable table of contributions
+│       ├── GoalCard.tsx        # Individual goal display with inline edit button
+│       ├── AddGoalModal.tsx    # Modal for creating/editing goals (dual mode)
+│       ├── AddContributionModal.tsx  # Modal for adding/editing contributions (dual mode)
+│       └── ViewContributionsModal.tsx # Contributions table with actions column
 │
 ├── hooks/                      # Custom React Hooks
 │   ├── useExchangeRate.ts      # Fetch + cache exchange rates
-│   ├── useGoals.ts             # CRUD operations for goals
+│   ├── useGoals.ts             # Full CRUD operations for goals & contributions
 │   └── useDashboardStats.ts    # Computed dashboard statistics
 │
 ├── lib/
@@ -139,6 +154,7 @@ syfe-assignment/
 │   ├── api/                    # API Layer / Business Logic
 │   │   ├── exchangeRate.ts     # Exchange rate API integration
 │   │   └── goals.ts            # Goal & contribution CRUD operations
+│   │                           # (create, read, update, delete functions)
 │   │
 │   ├── utils/                  # Utility Functions
 │   │   ├── format.ts           # Currency & date formatting
@@ -172,10 +188,13 @@ syfe-assignment/
 │  │   Custom Hooks Layer  │        │   Component Layer        │ │
 │  │                       │        │                          │ │
 │  │  • useGoals()         │◄───────┤  • DashboardHeader       │ │
-│  │  • useExchangeRate()  │        │  • GoalCard              │ │
-│  │  • useDashboardStats()│        │  • AddGoalModal          │ │
+│  │    - Full CRUD ops    │        │  • GoalCard (w/ edit)    │ │
+│  │  • useExchangeRate()  │        │  • AddGoalModal          │ │
+│  │  • useDashboardStats()│        │    (create/edit mode)    │ │
 │  │                       │        │  • AddContributionModal  │ │
+│  │                       │        │    (create/edit mode)    │ │
 │  │                       │        │  • ViewContributionsModal│ │
+│  │                       │        │    (w/ actions column)   │ │
 │  └──────────┬────────────┘        │  • ConfirmationModal     │ │
 │             │                     └──────────────────────────┘ │
 │             ▼                                                   │
@@ -184,11 +203,15 @@ syfe-assignment/
 │  │   Logic Layer         │        │                          │ │
 │  │                       │        │  • Button                │ │
 │  │  • goals.ts           │        │  • Input                 │ │
-│  │    - CRUD operations  │        │  • Select                │ │
-│  │    - Progress calc    │        │  • Modal                 │ │
-│  │                       │        │  • ProgressBar           │ │
-│  │  • exchangeRate.ts    │        │  • Card                  │ │
-│  │    - API integration  │        └──────────────────────────┘ │
+│  │    - Create goals     │        │  • Select                │ │
+│  │    - Update goals     │        │  • Modal                 │ │
+│  │    - Delete goals     │        │  • ProgressBar           │ │
+│  │    - Add contribution │        │  • Card                  │ │
+│  │    - Edit contribution│        └──────────────────────────┘ │
+│  │    - Delete contrib   │                                      │
+│  │                       │                                      │
+│  │  • exchangeRate.ts    │                                      │
+│  │    - API integration  │                                      │
 │  │    - Caching logic    │                                      │
 │  └──────────┬────────────┘                                      │
 │             │                                                    │
@@ -217,16 +240,23 @@ syfe-assignment/
 
 ## Data Flow
 
+### Example: Edit Contribution
 ```
-User Action (e.g., "Add Contribution")
+User clicks edit icon in Actions column
          ↓
-    Component (AddContributionModal)
+    ViewContributionsModal → onEditContribution handler
          ↓
-    Form Submission → Validation (validation.ts)
+    Parent (page.tsx) → Opens AddContributionModal with prefilled data
          ↓
-    Custom Hook (useGoals)
+    User modifies fields → Form Validation (validation.ts)
          ↓
-    API Layer (goals.ts → addContribution)
+    Form Submission → Custom Hook (useGoals.editContribution)
+         ↓
+    API Layer (goals.ts → updateContribution)
+         ↓
+    Calculate amount difference (newAmount - oldAmount)
+         ↓
+    Update contribution + adjust goal's currentAmount
          ↓
     Update State + localStorage (storage.ts)
          ↓
@@ -234,7 +264,7 @@ User Action (e.g., "Add Contribution")
          ↓
     Dashboard Stats Recalculated (useDashboardStats)
          ↓
-    UI Updates (GoalCard, DashboardHeader)
+    UI Updates (GoalCard, DashboardHeader, ViewContributionsModal)
 ```
 
 ---
@@ -331,19 +361,49 @@ interface ExchangeRate {
 | Component | Responsibilities | State Managed |
 |-----------|-----------------|---------------|
 | `DashboardHeader` | Display stats, exchange rate, refresh | Loading state |
-| `GoalCard` | Show goal details, progress, actions | Local modal states |
-| `AddGoalModal` | Goal creation form, validation | Form state, errors |
-| `AddContributionModal` | Contribution form, completion preview | Form state, errors |
-| `ViewContributionsModal` | Contributions table, sorting | None (pure display) |
+| `GoalCard` | Show goal details, progress, actions, edit button | Local modal states |
+| `AddGoalModal` | Goal create/edit form (dual mode), validation | Form state, errors, edit mode |
+| `AddContributionModal` | Contribution create/edit form (dual mode) | Form state, errors, edit mode |
+| `ViewContributionsModal` | Contributions table with actions column | None (pure display) |
 
 ### Custom Hooks (hooks/)
 **Purpose**: Encapsulate business logic and side effects
 
 | Hook | Returns | Side Effects |
 |------|---------|--------------|
-| `useGoals` | goals[], CRUD functions | localStorage sync |
+| `useGoals` | goals[], Full CRUD functions (addGoal, editGoal, removeGoal, addGoalContribution, editContribution, removeContribution) | localStorage sync |
 | `useExchangeRate` | rate, loading, error, refresh | API calls, caching |
 | `useDashboardStats` | computed stats | Memoized calculations |
+
+---
+
+## Edit & Delete Implementation Details
+
+### Modal Reuse Pattern
+Both `AddGoalModal` and `AddContributionModal` support dual modes:
+- **Create Mode**: Empty form, "Add" button text
+- **Edit Mode**: Prefilled form, "Update" button text
+- Mode detection: `const isEditMode = !!goal` or `!!contribution`
+
+### Smart Amount Calculation
+When editing contribution amounts:
+```typescript
+const amountDifference = newAmount - oldAmount;
+goal.currentAmount = goal.currentAmount + amountDifference;
+```
+This ensures goal progress stays accurate without recalculating all contributions.
+
+### Actions Column
+The contributions table includes a dedicated Actions column (15% width) with:
+- **Edit button**: Pencil icon → Opens prefilled edit modal
+- **Delete button**: Trash icon → Shows confirmation dialog
+- Hover effects: Blue (edit), Red (delete)
+
+### State Management for Edits
+The main page maintains separate state for:
+- Edit goal modal (goalId)
+- Edit contribution modal (goalId + contribution object)
+- Delete contribution confirmation (goalId + contributionId + title)
 
 ---
 
