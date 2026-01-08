@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Goal, ContributionFormData } from "@/types";
+import { Goal, ContributionFormData, Contribution } from "@/types";
 import { validateContributionForm } from "@/lib/utils";
 import { Modal, Input, Button } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface AddContributionModalProps {
   goal: Goal | null;
   onClose: () => void;
   onSubmit: (goalId: string, formData: ContributionFormData) => Promise<void>;
+  contribution?: Contribution | null;
 }
 
 export function AddContributionModal({
@@ -18,6 +19,7 @@ export function AddContributionModal({
   goal,
   onClose,
   onSubmit,
+  contribution,
 }: AddContributionModalProps) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -25,15 +27,25 @@ export function AddContributionModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isEditMode = !!contribution;
+
   useEffect(() => {
-    if (isOpen && goal) {
-      const today = new Date().toISOString().split("T")[0];
-      setDate(today);
-      setTitle("");
-      setAmount("");
+    if (isOpen) {
+      if (contribution) {
+        // Edit mode: prefill with contribution data
+        setTitle(contribution.title);
+        setAmount(contribution.amount.toString());
+        setDate(contribution.date.toISOString().split("T")[0]);
+      } else if (goal) {
+        // Create mode: reset form with today's date
+        const today = new Date().toISOString().split("T")[0];
+        setDate(today);
+        setTitle("");
+        setAmount("");
+      }
       setErrors({});
     }
-  }, [isOpen, goal]);
+  }, [isOpen, goal, contribution]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +81,11 @@ export function AddContributionModal({
       setDate("");
       onClose();
     } catch (error) {
-      setErrors({ general: "Failed to add contribution" });
+      setErrors({
+        general: isEditMode
+          ? "Failed to update contribution"
+          : "Failed to add contribution",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -84,7 +100,11 @@ export function AddContributionModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Add Contribution to ${goal.name}`}
+      title={
+        isEditMode
+          ? "Edit Contribution"
+          : `Add Contribution to ${goal.name}`
+      }
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -185,7 +205,7 @@ export function AddContributionModal({
             isLoading={isSubmitting}
             className="flex-1"
           >
-            Add Contribution
+            {isEditMode ? "Update Contribution" : "Add Contribution"}
           </Button>
           <Button
             type="button"

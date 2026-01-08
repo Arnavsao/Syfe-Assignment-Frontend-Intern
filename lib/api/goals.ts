@@ -1,4 +1,4 @@
-import { Goal, Contribution, GoalFormData, ContributionFormData } from "@/types";
+import { Goal, Contribution, GoalFormData, ContributionFormData, Currency } from "@/types";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { getStorageItem, setStorageItem } from "@/lib/utils";
 
@@ -167,4 +167,99 @@ export function calculateExtraSavings(goals: Goal[]): number {
   const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
 
   return Math.max(0, totalSaved - totalTarget);
+}
+
+/**
+ * Update goal details (name, target amount, currency)
+ */
+export function updateGoalDetails(
+  goalId: string,
+  name: string,
+  targetAmount: number,
+  currency: Currency
+): Goal | null {
+  const goals = getGoals();
+  const goalIndex = goals.findIndex((g) => g.id === goalId);
+
+  if (goalIndex === -1) return null;
+
+  const updatedGoal = {
+    ...goals[goalIndex],
+    name: name.trim(),
+    targetAmount,
+    currency,
+    updatedAt: new Date(),
+  };
+
+  goals[goalIndex] = updatedGoal;
+  saveGoals(goals);
+
+  return updatedGoal;
+}
+
+/**
+ * Update a contribution
+ */
+export function updateContribution(
+  goalId: string,
+  contributionId: string,
+  formData: ContributionFormData
+): Goal | null {
+  const goals = getGoals();
+  const goal = goals.find((g) => g.id === goalId);
+
+  if (!goal) return null;
+
+  const contributionIndex = goal.contributions.findIndex(
+    (c) => c.id === contributionId
+  );
+
+  if (contributionIndex === -1) return null;
+
+  const oldContribution = goal.contributions[contributionIndex];
+  const amountDifference = formData.amount - oldContribution.amount;
+
+  // Update contribution
+  goal.contributions[contributionIndex] = {
+    ...oldContribution,
+    title: formData.title,
+    amount: formData.amount,
+    date: formData.date,
+  };
+
+  // Update goal's currentAmount
+  goal.currentAmount = Math.max(0, goal.currentAmount + amountDifference);
+  goal.updatedAt = new Date();
+
+  saveGoals(goals);
+
+  return goal;
+}
+
+/**
+ * Delete a contribution from a goal
+ */
+export function deleteContribution(
+  goalId: string,
+  contributionId: string
+): Goal | null {
+  const goals = getGoals();
+  const goal = goals.find((g) => g.id === goalId);
+
+  if (!goal) return null;
+
+  const contribution = goal.contributions.find((c) => c.id === contributionId);
+
+  if (!contribution) return null;
+
+  // Remove contribution
+  goal.contributions = goal.contributions.filter((c) => c.id !== contributionId);
+
+  // Update goal's currentAmount
+  goal.currentAmount = Math.max(0, goal.currentAmount - contribution.amount);
+  goal.updatedAt = new Date();
+
+  saveGoals(goals);
+
+  return goal;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Currency, GoalFormData, ContributionFormData, ModalState } from "@/types";
+import { Currency, GoalFormData, ContributionFormData, ModalState, Contribution } from "@/types";
 import { useExchangeRate, useGoals, useDashboardStats } from "@/hooks";
 import { DashboardHeader } from "@/components/dashboard";
 import { GoalCard, AddGoalModal, AddContributionModal, ViewContributionsModal } from "@/components/goals";
@@ -29,8 +29,29 @@ export default function Home() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Edit goal state
+  const [editGoalModalState, setEditGoalModalState] = useState<{
+    isOpen: boolean;
+    goalId: string | null;
+  }>({ isOpen: false, goalId: null });
+
+  // Edit contribution state
+  const [editContributionState, setEditContributionState] = useState<{
+    isOpen: boolean;
+    goalId: string | null;
+    contribution: Contribution | null;
+  }>({ isOpen: false, goalId: null, contribution: null });
+
+  // Delete contribution confirmation
+  const [deleteContributionConfirmation, setDeleteContributionConfirmation] = useState<{
+    isOpen: boolean;
+    goalId: string | null;
+    contributionId: string | null;
+    contributionTitle: string | null;
+  }>({ isOpen: false, goalId: null, contributionId: null, contributionTitle: null });
+
   const { exchangeRate, isLoading: isRateLoading, refetchRate } = useExchangeRate();
-  const { goals, isLoading: isGoalsLoading, addGoal, addGoalContribution, removeGoal } = useGoals();
+  const { goals, isLoading: isGoalsLoading, addGoal, addGoalContribution, removeGoal, editGoal, editContribution, removeContribution } = useGoals();
   const stats = useDashboardStats({ goals, exchangeRate, displayCurrency });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -95,6 +116,60 @@ export default function Home() {
 
   const handleCancelDelete = () => {
     setDeleteConfirmation({ isOpen: false, goalId: null, goalName: null });
+  };
+
+  // Edit goal handlers
+  const handleEditGoal = (goalId: string) => {
+    setEditGoalModalState({ isOpen: true, goalId });
+  };
+
+  const handleEditGoalSubmit = async (formData: GoalFormData) => {
+    const goalId = editGoalModalState.goalId;
+    if (!goalId) return;
+
+    await editGoal(goalId, formData.name, formData.targetAmount, formData.currency);
+    setEditGoalModalState({ isOpen: false, goalId: null });
+  };
+
+  // Edit contribution handlers
+  const handleEditContribution = (goalId: string, contribution: Contribution) => {
+    setEditContributionState({ isOpen: true, goalId, contribution });
+  };
+
+  const handleEditContributionSubmit = async (goalId: string, formData: ContributionFormData) => {
+    const contributionId = editContributionState.contribution?.id;
+    if (!contributionId) return;
+
+    await editContribution(goalId, contributionId, formData);
+    setEditContributionState({ isOpen: false, goalId: null, contribution: null });
+  };
+
+  // Delete contribution handlers
+  const handleDeleteContribution = (goalId: string, contributionId: string, contributionTitle: string) => {
+    setDeleteContributionConfirmation({
+      isOpen: true,
+      goalId,
+      contributionId,
+      contributionTitle,
+    });
+  };
+
+  const handleConfirmDeleteContribution = async () => {
+    const { goalId, contributionId } = deleteContributionConfirmation;
+    if (!goalId || !contributionId) return;
+
+    setIsDeleting(true);
+    try {
+      await removeContribution(goalId, contributionId);
+      setDeleteContributionConfirmation({
+        isOpen: false,
+        goalId: null,
+        contributionId: null,
+        contributionTitle: null,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const selectedGoal = goals.find((g) => g.id === modalState.goalId) || null;
@@ -173,6 +248,7 @@ export default function Home() {
                 onAddContribution={handleAddContribution}
                 onViewContributions={handleViewContributions}
                 onDelete={handleDeleteGoal}
+                onEdit={handleEditGoal}
               />
             ))}
           </div>
@@ -195,6 +271,8 @@ export default function Home() {
           isOpen={viewContributionsModalState.isOpen}
           goal={selectedGoalForView}
           onClose={handleCloseViewContributions}
+          onEditContribution={handleEditContribution}
+          onDeleteContribution={handleDeleteContribution}
         />
 
         <ConfirmationModal
@@ -203,6 +281,43 @@ export default function Home() {
           onConfirm={handleConfirmDelete}
           title="Delete Goal"
           message={`Are you sure you want to delete "${deleteConfirmation.goalName}"? This action cannot be undone and all contributions will be permanently removed.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          isLoading={isDeleting}
+        />
+
+        {/* Edit Goal Modal */}
+        <AddGoalModal
+          isOpen={editGoalModalState.isOpen}
+          onClose={() => setEditGoalModalState({ isOpen: false, goalId: null })}
+          onSubmit={handleEditGoalSubmit}
+          goal={goals.find((g) => g.id === editGoalModalState.goalId) || null}
+        />
+
+        {/* Edit Contribution Modal */}
+        <AddContributionModal
+          isOpen={editContributionState.isOpen}
+          goal={goals.find((g) => g.id === editContributionState.goalId) || null}
+          onClose={() => setEditContributionState({ isOpen: false, goalId: null, contribution: null })}
+          onSubmit={handleEditContributionSubmit}
+          contribution={editContributionState.contribution}
+        />
+
+        {/* Delete Contribution Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={deleteContributionConfirmation.isOpen}
+          onClose={() =>
+            setDeleteContributionConfirmation({
+              isOpen: false,
+              goalId: null,
+              contributionId: null,
+              contributionTitle: null,
+            })
+          }
+          onConfirm={handleConfirmDeleteContribution}
+          title="Delete Contribution"
+          message={`Are you sure you want to delete "${deleteContributionConfirmation.contributionTitle}"? This will reduce your saved amount.`}
           confirmText="Delete"
           cancelText="Cancel"
           variant="danger"

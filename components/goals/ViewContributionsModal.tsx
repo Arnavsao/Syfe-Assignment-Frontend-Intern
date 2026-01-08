@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Goal } from "@/types";
+import { Goal, Contribution } from "@/types";
 import { Modal } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 
@@ -9,12 +9,20 @@ interface ViewContributionsModalProps {
   isOpen: boolean;
   goal: Goal | null;
   onClose: () => void;
+  onEditContribution: (goalId: string, contribution: Contribution) => void;
+  onDeleteContribution: (
+    goalId: string,
+    contributionId: string,
+    contributionTitle: string
+  ) => void;
 }
 
 export function ViewContributionsModal({
   isOpen,
   goal,
   onClose,
+  onEditContribution,
+  onDeleteContribution,
 }: ViewContributionsModalProps) {
   if (!goal) return null;
 
@@ -71,14 +79,17 @@ export function ViewContributionsModal({
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: "35%" }}>
                     Title
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: "25%" }}>
                     Date
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: "25%" }}>
                     Amount
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: "15%" }}>
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -100,6 +111,54 @@ export function ViewContributionsModal({
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
                       {formatCurrency(contribution.amount, contribution.currency)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Edit button */}
+                        <button
+                          onClick={() => onEditContribution(goal.id, contribution)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          aria-label="Edit contribution"
+                          title="Edit contribution"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
+                        {/* Delete button */}
+                        <button
+                          onClick={() =>
+                            onDeleteContribution(goal.id, contribution.id, contribution.title)
+                          }
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          aria-label="Delete contribution"
+                          title="Delete contribution"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

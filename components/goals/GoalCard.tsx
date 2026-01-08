@@ -10,6 +10,7 @@ interface GoalCardProps {
   exchangeRate: ExchangeRate | null;
   onAddContribution: (goalId: string) => void;
   onViewContributions: (goalId: string) => void;
+  onEdit?: (goalId: string) => void;
   onDelete?: (goalId: string) => void;
 }
 
@@ -18,6 +19,7 @@ export function GoalCard({
   exchangeRate,
   onAddContribution,
   onViewContributions,
+  onEdit,
   onDelete,
 }: GoalCardProps) {
   const progress = calculatePercentage(goal.currentAmount, goal.targetAmount);
@@ -45,9 +47,33 @@ export function GoalCard({
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-xl font-semibold text-gray-900 mb-1">
-            {goal.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-gray-900 mb-1">
+              {goal.name}
+            </h3>
+            {onEdit && (
+              <button
+                onClick={() => onEdit(goal.id)}
+                className="text-gray-400 hover:text-blue-600 transition-colors"
+                aria-label="Edit goal"
+                title="Edit goal"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-500">
             Created {new Date(goal.createdAt).toLocaleDateString()}
           </p>
